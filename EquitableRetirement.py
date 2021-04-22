@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 class EquitableRetirement:
+
     class Params:
         def __init__(self):
             # parameters
@@ -93,15 +94,15 @@ class EquitableRetirement:
         model.R = pe.Set(initialize=self.R, doc='Renewable plant locations with type of technology (wind or solar)')
 
         # parameters
-        model.HISTGEN = pe.Param(model.C, model.Y, initialize=a2d(self.Params.HISTGEN,self.C,self.Y), doc = "Historical Generation of coal plants")
+        model.HISTGEN = pe.Param(model.C, initialize=a2d(self.Params.HISTGEN,self.C), doc = "Historical Generation of coal plants")
         model.COALCAP = pe.Param(model.C, initialize=a2d(self.Params.COALCAP,self.C), doc = 'Nameplate Capacity of coal plants')
         model.CF = pe.Param(model.R, initialize=a2d(self.Params.CF,self.R),doc = "Annual CF @ RE location")
-        model.RECAPEX = pe.Param(model.R, initialize=a2d(self.Params.CAPEX,self.R),doc = "RE plants CAPEX values ($/MW")
-        model.REOPEX = pe.Param(model.R, initialize=a2d(self.Params.REOPEX,self.R),doc = "RE plants OPEX values ($/MWh")
+        model.RECAPEX = pe.Param(model.R, initialize=a2d(self.Params.RECAPEX,self.R),doc = "RE plants CAPEX values ($/MW")
+        model.REFOPEX = pe.Param(model.R, initialize=a2d(self.Params.REFOPEX,self.R),doc = "RE plants OPEX values ($/MWh")
         model.COALVOPEX = pe.Param(model.C, initialize=a2d(self.Params.COALVOPEX,self.C), doc = 'Coal plants VOPEX values $/MWh')
-        model.COALFOPEX = pe.Param(model.C, initialize=a2d(self.Params.COALOPEX,self.C), doc = "Coal plants FOPEX values $/MW")
+        model.COALFOPEX = pe.Param(model.C, initialize=a2d(self.Params.COALFOPEX,self.C), doc = "Coal plants FOPEX values $/MW")
         model.MAXCAP = pe.Param(model.R,model.C,initialize=a2d(self.Params.MAXCAP,self.R,self.C), doc ='Maximum capacity for RE plant to replace coal plant MW')
-        model.SITEMAXCAP = pe.Param(model.R, initialzie=a2d(self.Params.SITEMAXCAP,self.R), doc = 'Maximum total capacity for RE site MW')
+        model.SITEMAXCAP = pe.Param(model.R, initialize=a2d(self.Params.SITEMAXCAP,self.R), doc = 'Maximum total capacity for RE site MW')
         model.MAXSITES = pe.Param(model.C,initialize=a2d(self.Params.MAXSITES,self.C), doc = "Number of Sites allowable to replace coal plant")
         model.HD = pe.Param(model.C,initialize=a2d(self.Params.HD,self.C), doc="Health damages of each coal plant")
         model.RETEF = pe.Param(model.C,initialize=a2d(self.Params.RETEF,self.C), doc="Retirement EF for each coal plant (will most likely be a single static value)")
@@ -142,15 +143,15 @@ class EquitableRetirement:
 
         # constraints
         def coalGenRule(model,c,y):
-            return model.coalGen[c,y] == model.HISTGEN[c,y]*model.coalOnline[c,y]
+            return model.coalGen[c,y] == model.HISTGEN[c]*model.coalOnline[c,y]
         model.coalGenRule = pe.Constraint(model.C,model.Y,rule=coalGenRule, doc='Coal generation must equal historical generation * whether that plant is online')
 
         def balanceGenRule(model,c,y):
-            return sum(model.reGen[r,c,y] for r in model.R) == model.HISTGEN[c,y]-model.coalGen[c,y]
+            return sum(model.reGen[r,c,y] for r in model.R) == model.HISTGEN[c]-model.coalGen[c,y]
         model.balanceGenRule = pe.Constraint(model.C,model.Y,rule=balanceGenRule, doc = "RE generation for each coal location must equal retired capacity")
 
         def reGenRule(model,r,c,y):
-            return model.reGen[r,c,y] <= model.CF[r,y]*model.reCap[r,c,y]
+            return model.reGen[r,c,y] <= model.CF[r]*model.reCap[r,c,y]
         model.reGenRule = pe.Constraint(model.R,model.C,model.Y,rule=reGenRule, doc='RE generation must be less than or equal to capacity factor* chosen capacity')
 
         def reCapRule(model,r,c,y):
@@ -226,5 +227,3 @@ class EquitableRetirement:
         self.Output.reOnline = np.array([[[pe.value(self.model.reOnline[r,c,y]) for y in self.Y] for c in self.C] for r in self.R])
         self.Output.coalOnline = np.array([[pe.value(self.model.coalOnline[c,y]) for y in self.Y] for c in self.C])
         pass
-
-
