@@ -5,6 +5,12 @@ from RenewableSites import RenewableSites
 import numpy as np
 import pandas as pd 
 
+def getDefaultSolarMaxCap(numSolar):
+    pass
+
+def getDefaultWindMaxCap(numWind):
+    pass
+
 def test_large():
     ''' use sample data to test runtime and large-scale functionality of formulation '''
     print('TEST_LARGE:')
